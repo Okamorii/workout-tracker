@@ -70,6 +70,7 @@ class StrengthLog(db.Model):
     rpe = db.Column(db.Integer)  # 1-10
     rest_seconds = db.Column(db.Integer)
     tempo = db.Column(db.String(20))
+    warmup_sets = db.Column(db.Integer, default=0)  # Number of warm-up sets before working sets
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
@@ -158,6 +159,13 @@ class RunningLog(db.Model):
     route_notes = db.Column(db.Text)
     interval_details = db.Column(db.Text)  # Details for interval runs (e.g., "20min warm up + 5x30s at 4'30")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def pace_per_km(self):
+        """Calculate pace per km (duration / distance)."""
+        if not self.duration_minutes or not self.distance_km or float(self.distance_km) == 0:
+            return None
+        return round(self.duration_minutes / float(self.distance_km), 2)
 
     @property
     def trimp_score(self):

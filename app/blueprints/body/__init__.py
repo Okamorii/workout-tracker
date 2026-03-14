@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from app import db
 from app.models import BodyMeasurement
@@ -39,9 +39,16 @@ def index():
 def add_measurement():
     """Add new body measurement."""
     if request.method == 'POST':
+        # Parse measurement date from form (string) to date object
+        date_str = request.form.get('measurement_date')
+        if date_str:
+            measurement_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        else:
+            measurement_date = date.today()
+
         measurement = BodyMeasurement(
             user_id=current_user.user_id,
-            measurement_date=request.form.get('measurement_date') or date.today(),
+            measurement_date=measurement_date,
             weight_kg=parse_decimal(request.form.get('weight_kg')),
             body_fat_pct=parse_decimal(request.form.get('body_fat_pct')),
             chest_cm=parse_decimal(request.form.get('chest_cm')),

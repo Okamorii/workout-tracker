@@ -41,6 +41,7 @@
                 data-sets="{{ ex.last_sets }}"
                 data-reps="{{ ex.last_reps }}"
                 data-weight="{{ ex.last_weight or '' }}"
+                data-warmup="{{ ex.suggested_warmup }}"
                 data-name="{{ ex.exercise_name }}">
                 <div class="checklist-checkbox">
                     {% if ex.exercise_id in (current_logs|map(attribute='exercise_id')|list) %}
@@ -52,6 +53,7 @@
                 <div class="checklist-content">
                     <div class="checklist-exercise-name">{{ ex.exercise_name }}</div>
                     <div class="checklist-target">
+                        {% if ex.suggested_warmup %}<span class="warmup-badge">{{ ex.suggested_warmup }} warm-up</span>{% endif %}
                         Target: {{ ex.target_sets }}x{{ ex.target_reps }}
                         {% if ex.has_history %}
                         <span class="checklist-last">
@@ -76,6 +78,7 @@
             <li class="logged-exercise">
                 <div class="log-info">
                     <span class="log-exercise-name">{{ log.exercise.name }}</span>
+                    {% if log.warmup_sets %}<span class="log-warmup">{{ log.warmup_sets }} warm-up +</span>{% endif %}
                     <span class="log-details">{{ log.sets }}x{{ log.reps }} @ {{ log.weight_kg }}kg</span>
                     {% if log.rpe %}<span class="log-rpe">RPE {{ log.rpe }}</span>{% endif %}
                     <span class="log-1rm">Est. 1RM: {{ log.estimated_1rm }}kg</span>
@@ -125,7 +128,12 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="sets">Sets</label>
+                    <label for="warmup_sets">Warm-up Sets</label>
+                    <input type="number" id="warmup_sets" name="warmup_sets" min="0" max="10"
+                           value="0" inputmode="numeric" class="input-large">
+                </div>
+                <div class="form-group">
+                    <label for="sets">Working Sets</label>
                     <input type="number" id="sets" name="sets" min="1" max="20"
                            required inputmode="numeric" class="input-large">
                 </div>
@@ -239,12 +247,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const sets = this.dataset.sets;
                 const reps = this.dataset.reps;
                 const weight = this.dataset.weight;
+                const warmup = this.dataset.warmup;
                 const name = this.dataset.name;
 
                 // Select the exercise in dropdown
                 exerciseSelect.value = exerciseId;
 
-                // Pre-fill form with last performance
+                // Pre-fill form with last performance and suggested warm-up
+                document.getElementById('warmup_sets').value = warmup || 0;
                 document.getElementById('sets').value = sets;
                 document.getElementById('reps').value = reps;
                 document.getElementById('weight_kg').value = weight;

@@ -28,6 +28,7 @@ class Exercise(db.Model):
     description = db.Column(db.Text)
     muscle_group = db.Column(db.String(200))  # Comma-separated for multiple groups
     exercise_type = db.Column(db.String(20))  # 'strength' or 'cardio'
+    movement_type = db.Column(db.String(20), default='compound')  # 'compound' or 'isolation'
     video_reference_url = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

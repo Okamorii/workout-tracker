@@ -46,7 +46,9 @@ class WorkoutTemplate(db.Model):
         from app.models import StrengthLog, Exercise
 
         result = []
-        for te in self.exercises.all():
+        muscle_groups_worked = set()  # Track which muscle groups have been worked
+
+        for te in self.exercises.order_by(TemplateExercise.order_index).all():
             exercise = Exercise.query.get(te.exercise_id)
             if not exercise:
                 continue
@@ -61,15 +63,28 @@ class WorkoutTemplate(db.Model):
                 StrengthLog.log_id.desc()
             ).first()
 
+            # Calculate suggested warm-up sets based on:
+            # 1. Whether this muscle group was already worked
+            # 2. Whether it's a compound or isolation exercise
+            suggested_warmup = self._calculate_warmup_sets(
+                exercise, muscle_groups_worked
+            )
+
+            # Mark this muscle group as worked
+            if exercise.muscle_group:
+                muscle_groups_worked.add(exercise.muscle_group)
+
             result.append({
                 'template_exercise_id': te.template_exercise_id,
                 'exercise_id': te.exercise_id,
                 'exercise_name': exercise.name,
                 'muscle_group': exercise.muscle_group,
+                'movement_type': exercise.movement_type,
                 'order_index': te.order_index,
                 'target_sets': te.target_sets,
                 'target_reps': te.target_reps,
                 'notes': te.notes,
+                'suggested_warmup': suggested_warmup,
                 # Last performance data (smart pre-fill)
                 'last_sets': last_log.sets if last_log else te.target_sets,
                 'last_reps': last_log.reps if last_log else te.target_reps,
@@ -80,6 +95,28 @@ class WorkoutTemplate(db.Model):
             })
 
         return result
+
+    def _calculate_warmup_sets(self, exercise, muscle_groups_worked):
+        """Calculate suggested warm-up sets for an exercise.
+
+        Logic:
+        - First compound for a muscle group: 3 warm-up sets
+        - First isolation for a muscle group: 2 warm-up sets
+        - Muscle group already warmed up: 1 warm-up set
+        """
+        muscle_group = exercise.muscle_group
+        is_compound = exercise.movement_type == 'compound'
+        already_worked = muscle_group in muscle_groups_worked
+
+        if already_worked:
+            # Muscle already warmed up from previous exercise
+            return 1
+        elif is_compound:
+            # First compound movement for this muscle group
+            return 3
+        else:
+            # First isolation movement for this muscle group
+            return 2
 
     def duplicate(self, new_name=None):
         """Create a copy of this template."""
@@ -116,6 +153,7 @@ class TemplateExercise(db.Model):
     order_index = db.Column(db.Integer, default=0)  # Order within template
     target_sets = db.Column(db.Integer, default=3)
     target_reps = db.Column(db.Integer, default=10)
+    warmup_sets = db.Column(db.Integer, default=0)  # Suggested warm-up sets
     notes = db.Column(db.String(200))  # e.g., "Warm up with lighter weight first"
 
     # Relationship to exercise

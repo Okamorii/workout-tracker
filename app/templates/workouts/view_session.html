@@ -40,6 +40,7 @@
                 <li class="logged-exercise">
                     <div class="log-info">
                         <span class="log-exercise-name">{{ log.exercise.name }}</span>
+                        {% if log.warmup_sets %}<span class="log-warmup">{{ log.warmup_sets }} warm-up +</span>{% endif %}
                         <span class="log-details">{{ log.sets }}x{{ log.reps }} @ {{ log.weight_kg or 0 }}kg</span>
                         {% if log.rpe %}<span class="log-rpe">RPE {{ log.rpe }}</span>{% endif %}
                         {% if log.weight_kg %}

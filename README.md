@@ -14,6 +14,7 @@ A full-featured workout tracking application for monitoring strength training an
 
 ### Workout Logging
 - **Strength Training** - Log sets, reps, weight, RPE, and rest times
+- **Smart Warm-up Suggestions** - Auto-calculated warm-up sets based on exercise type and order
 - **Running Sessions** - Track distance, duration, pace, heart rate, and run type (easy/tempo/interval/long)
 - **Interval Builder** - Structured interval configuration with warm up, intervals, recovery, and cool down
 - **Recovery Tracking** - Daily sleep, energy, soreness, and motivation scores (1-10)
@@ -29,9 +30,10 @@ A full-featured workout tracking application for monitoring strength training an
 - **Readiness Score** - Daily training readiness based on recovery metrics
 
 ### Planning & Templates
-- **Workout Templates** - Save and reuse workout structures
+- **Workout Templates** - Save and reuse workout structures with smart warm-up suggestions
 - **Weekly Planning** - Calendar view with workout scheduling
-- **Exercise Library** - Browse, filter, and manage exercises with substitutes
+- **Exercise Library** - 57 exercises classified as compound/isolation, organized by apparatus (cable/dumbbell/barbell/machine)
+- **Exercise Substitutes** - Alternative exercises for when equipment is busy
 
 ### Technical Features
 - **Mobile-First PWA** - Installable on phones, works offline

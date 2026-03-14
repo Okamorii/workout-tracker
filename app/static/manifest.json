@@ -4,8 +4,8 @@
   "description": "Track your strength training and running sessions",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#1a1a2e",
+  "background_color": "#0c0a14",
+  "theme_color": "#1a1625",
   "orientation": "portrait-primary",
   "icons": [
     {
