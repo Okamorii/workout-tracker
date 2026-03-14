@@ -42,7 +42,9 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    weekly_strength_target INTEGER DEFAULT 2,
+    weekly_running_target INTEGER DEFAULT 4
 );
 
 -- Exercise library

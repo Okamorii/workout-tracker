@@ -96,8 +96,8 @@ def get_dashboard_stats(user_id):
         'weekly_distance': round(weekly_distance, 2),
         'weekly_volume': round(float(weekly_volume), 0),
         'streak': streak,
-        'strength_target': 2,  # Target per week
-        'running_target': 4   # Target per week
+        'strength_target': current_user.weekly_strength_target or 2,
+        'running_target': current_user.weekly_running_target or 4
     }
 
 

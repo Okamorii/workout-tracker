@@ -14,6 +14,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
+    weekly_strength_target = db.Column(db.Integer, default=2)
+    weekly_running_target = db.Column(db.Integer, default=4)
 
     # Relationships
     workout_sessions = db.relationship('WorkoutSession', backref='user', lazy='dynamic')

@@ -53,6 +53,30 @@
         <button type="submit" class="btn btn-secondary">Change Password</button>
     </form>
 
+    <!-- Weekly Targets -->
+    <form method="POST" class="card">
+        <input type="hidden" name="action" value="update_targets">
+        <h2>Weekly Targets</h2>
+        <p class="text-secondary text-sm">Set your weekly workout goals for the dashboard progress bars.</p>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="weekly_strength_target">Strength sessions / week</label>
+                <input type="number" id="weekly_strength_target" name="weekly_strength_target"
+                       value="{{ current_user.weekly_strength_target or 2 }}"
+                       min="0" max="14" inputmode="numeric" class="input-large">
+            </div>
+            <div class="form-group">
+                <label for="weekly_running_target">Running sessions / week</label>
+                <input type="number" id="weekly_running_target" name="weekly_running_target"
+                       value="{{ current_user.weekly_running_target or 4 }}"
+                       min="0" max="14" inputmode="numeric" class="input-large">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Targets</button>
+    </form>
+
     <!-- Account Info -->
     <div class="card">
         <h2>Account Info</h2>

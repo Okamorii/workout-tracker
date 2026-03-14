@@ -140,4 +140,16 @@ def profile():
             db.session.commit()
             flash('Password changed successfully.', 'success')
 
+        elif action == 'update_targets':
+            strength_target = request.form.get('weekly_strength_target', type=int)
+            running_target = request.form.get('weekly_running_target', type=int)
+
+            if strength_target is not None and 0 <= strength_target <= 14:
+                current_user.weekly_strength_target = strength_target
+            if running_target is not None and 0 <= running_target <= 14:
+                current_user.weekly_running_target = running_target
+
+            db.session.commit()
+            flash('Weekly targets updated.', 'success')
+
     return render_template('auth/profile.html')
