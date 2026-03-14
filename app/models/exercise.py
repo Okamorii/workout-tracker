@@ -30,6 +30,7 @@ class Exercise(db.Model):
     exercise_type = db.Column(db.String(20))  # 'strength' or 'cardio'
     movement_type = db.Column(db.String(20), default='compound')  # 'compound' or 'isolation'
     video_reference_url = db.Column(db.String(255))
+    image_url = db.Column(db.String(500))  # URL to exercise image/illustration
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

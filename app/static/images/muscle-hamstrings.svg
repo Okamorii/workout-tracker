@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#a855f7" stroke-width="2">
+  <!-- Hamstrings icon - back of leg -->
+  <path d="M22 12 L20 48 L26 52 L28 12" fill="#a855f7" fill-opacity="0.15"/>
+  <path d="M36 12 L38 52 L44 48 L42 12" fill="#a855f7" fill-opacity="0.15"/>
+  <path d="M23 20 Q26 32 23 44" stroke-width="2.5" fill="none"/>
+  <path d="M41 20 Q38 32 41 44" stroke-width="2.5" fill="none"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#a855f7" stroke-width="2">
+  <!-- Back muscles icon - V shape for lats -->
+  <path d="M32 12 L20 32 L24 48 L32 52 L40 48 L44 32 Z" fill="#a855f7" fill-opacity="0.2"/>
+  <line x1="32" y1="12" x2="32" y2="52" stroke-width="1.5"/>
+  <path d="M26 20 Q32 24 38 20" fill="none"/>
+  <path d="M24 30 Q32 36 40 30" fill="none"/>
+</svg>

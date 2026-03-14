@@ -190,15 +190,19 @@
             <input type="hidden" id="template_exercise_id" name="template_exercise_id" value="">
             <div class="form-group">
                 <label for="exercise_id">Exercise</label>
-                <select id="exercise_id" name="exercise_id" required class="exercise-select">
-                    <option value="">Select exercise...</option>
-                    {% for exercise in exercises %}
-                    <option value="{{ exercise.exercise_id }}"
-                            data-muscle="{{ exercise.muscle_group }}">
-                        {{ exercise.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="exercise-select-wrapper">
+                    <img src="/static/images/exercise-default.svg" alt="" class="exercise-preview-img" id="exercisePreviewImg">
+                    <select id="exercise_id" name="exercise_id" required class="exercise-select">
+                        <option value="">Select exercise...</option>
+                        {% for exercise in exercises %}
+                        <option value="{{ exercise.exercise_id }}"
+                                data-muscle="{{ exercise.muscle_group }}"
+                                data-image="{{ exercise.image_url or '/static/images/exercise-default.svg' }}">
+                            {{ exercise.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <!-- Substitute Button (shown when exercise selected) -->
@@ -360,6 +364,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const substituteList = document.getElementById('substituteList');
     const lastPerformance = document.getElementById('lastPerformance');
     const lastDetails = document.getElementById('lastDetails');
+    const exercisePreviewImg = document.getElementById('exercisePreviewImg');
+    const defaultImageUrl = '/static/images/exercise-default.svg';
+
+    // Update exercise preview image
+    function updateExerciseImage() {
+        const selectedOption = exerciseSelect.options[exerciseSelect.selectedIndex];
+        if (selectedOption && selectedOption.dataset.image) {
+            exercisePreviewImg.src = selectedOption.dataset.image;
+        } else {
+            exercisePreviewImg.src = defaultImageUrl;
+        }
+    }
 
     // Per-set mode handling
     const perSetToggle = document.getElementById('perSetMode');
@@ -533,6 +549,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // When exercise changes (manual selection)
     exerciseSelect.addEventListener('change', function() {
         const exerciseId = this.value;
+
+        // Update exercise preview image
+        updateExerciseImage();
+
         if (!exerciseId) {
             substituteSection.style.display = 'none';
             lastPerformance.style.display = 'none';
@@ -585,10 +605,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         const lastInfo = sub.last_weight_kg
                             ? `Last: ${sub.last_sets}x${sub.last_reps} @ ${sub.last_weight_kg}kg`
                             : 'No previous data';
+                        const imgUrl = sub.image_url || defaultImageUrl;
                         html += `
-                            <li class="substitute-option" data-id="${sub.substitute_exercise_id}">
-                                <span class="sub-name">${sub.exercise_name}</span>
-                                <span class="sub-last">${lastInfo}</span>
+                            <li class="substitute-option" data-id="${sub.substitute_exercise_id}" data-image="${imgUrl}">
+                                <img src="${imgUrl}" alt="" class="sub-img">
+                                <div class="sub-info">
+                                    <span class="sub-name">${sub.exercise_name}</span>
+                                    <span class="sub-last">${lastInfo}</span>
+                                </div>
                             </li>
                         `;
                     });

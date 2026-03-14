@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#a855f7" stroke-width="2">
+  <!-- Shoulders icon - deltoid caps -->
+  <ellipse cx="18" cy="26" rx="10" ry="12" fill="#a855f7" fill-opacity="0.2"/>
+  <ellipse cx="46" cy="26" rx="10" ry="12" fill="#a855f7" fill-opacity="0.2"/>
+  <path d="M28 24 L32 20 L36 24" fill="none"/>
+  <line x1="18" y1="38" x2="18" y2="48"/>
+  <line x1="46" y1="38" x2="46" y2="48"/>
+</svg>

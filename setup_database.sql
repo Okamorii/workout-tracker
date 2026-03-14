@@ -162,6 +162,9 @@ ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS warmup_sets INTEGER DEFAULT 0
 ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS template_exercise_id INTEGER REFERENCES template_exercises(template_exercise_id) ON DELETE SET NULL;
 ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS set_number INTEGER DEFAULT NULL;
 
+-- Add image_url to exercises
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);
+
 -- Planned workouts (weekly planning)
 CREATE TABLE planned_workouts (
     plan_id SERIAL PRIMARY KEY,
@@ -438,6 +441,7 @@ RETURNS TABLE(
     substitute_exercise_id INTEGER,
     exercise_name VARCHAR,
     muscle_group VARCHAR,
+    image_url VARCHAR,
     last_sets INTEGER,
     last_reps INTEGER,
     last_weight_kg DECIMAL,
@@ -449,6 +453,7 @@ BEGIN
         e.exercise_id,
         e.name,
         e.muscle_group,
+        e.image_url,
         sl.sets,
         sl.reps,
         sl.weight_kg,
