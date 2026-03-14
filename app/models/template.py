@@ -88,7 +88,8 @@ class WorkoutTemplate(db.Model):
                 # Last performance data (smart pre-fill)
                 'last_sets': last_log.sets if last_log else te.target_sets,
                 'last_reps': last_log.reps if last_log else te.target_reps,
-                'last_weight': float(last_log.weight_kg) if last_log and last_log.weight_kg else None,
+                # Use last_log weight, or fall back to starting_weight for first session
+                'last_weight': float(last_log.weight_kg) if last_log and last_log.weight_kg else (float(te.starting_weight) if te.starting_weight else None),
                 'last_rpe': last_log.rpe if last_log else None,
                 'last_date': str(last_log.session.session_date) if last_log else None,
                 'has_history': last_log is not None
@@ -136,6 +137,7 @@ class WorkoutTemplate(db.Model):
                 order_index=te.order_index,
                 target_sets=te.target_sets,
                 target_reps=te.target_reps,
+                starting_weight=te.starting_weight,
                 notes=te.notes
             )
             db.session.add(new_te)
@@ -154,6 +156,7 @@ class TemplateExercise(db.Model):
     target_sets = db.Column(db.Integer, default=3)
     target_reps = db.Column(db.Integer, default=10)
     warmup_sets = db.Column(db.Integer, default=0)  # Suggested warm-up sets
+    starting_weight = db.Column(db.Numeric(5, 2))  # Initial weight for first session (no history)
     notes = db.Column(db.String(200))  # e.g., "Warm up with lighter weight first"
 
     # Relationship to exercise

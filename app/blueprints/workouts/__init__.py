@@ -148,6 +148,8 @@ def log_exercise(session_id):
         rpe = request.form.get('rpe', type=int)
         rest_seconds = request.form.get('rest_seconds', type=int)
         warmup_sets = request.form.get('warmup_sets', type=int) or 0
+        template_exercise_id = request.form.get('template_exercise_id', type=int)
+        set_number = request.form.get('set_number', type=int)  # For per-set logging
 
         if not all([exercise_id, sets, reps]):
             flash('Exercise, sets, and reps are required.', 'error')
@@ -166,7 +168,9 @@ def log_exercise(session_id):
                 weight_kg=weight_kg,
                 rpe=rpe,
                 rest_seconds=rest_seconds,
-                warmup_sets=warmup_sets
+                warmup_sets=warmup_sets,
+                template_exercise_id=template_exercise_id,
+                set_number=set_number
             )
             db.session.add(log)
             db.session.commit()

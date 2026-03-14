@@ -71,6 +71,8 @@ class StrengthLog(db.Model):
     rest_seconds = db.Column(db.Integer)
     tempo = db.Column(db.String(20))
     warmup_sets = db.Column(db.Integer, default=0)  # Number of warm-up sets before working sets
+    template_exercise_id = db.Column(db.Integer, db.ForeignKey('template_exercises.template_exercise_id', ondelete='SET NULL'))
+    set_number = db.Column(db.Integer)  # For per-set logging: 1, 2, 3... NULL = batch entry
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property

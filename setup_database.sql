@@ -157,6 +157,11 @@ CREATE TABLE template_exercises (
     notes VARCHAR(200)
 );
 
+-- Add extra columns to strength_logs
+ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS warmup_sets INTEGER DEFAULT 0;
+ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS template_exercise_id INTEGER REFERENCES template_exercises(template_exercise_id) ON DELETE SET NULL;
+ALTER TABLE strength_logs ADD COLUMN IF NOT EXISTS set_number INTEGER DEFAULT NULL;
+
 -- Planned workouts (weekly planning)
 CREATE TABLE planned_workouts (
     plan_id SERIAL PRIMARY KEY,
