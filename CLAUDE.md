@@ -81,7 +81,10 @@ docker exec workout_db psql -U workout -d workout_tracker -c "YOUR SQL HERE"
 **Key Columns:**
 - `exercises.movement_type` - 'compound' or 'isolation' (used for smart warm-up calculation)
 - `strength_logs.warmup_sets` - Number of warm-up sets performed before working sets
+- `strength_logs.set_number` - Individual set number (1, 2, 3...) for per-set logging
 - `template_exercises.warmup_sets` - Suggested warm-up sets for template
+- `template_exercises.target_sets` - Target number of working sets
+- `template_exercises.target_reps` - Target reps per set
 
 **Key Functions (PostgreSQL):**
 - `calculate_1rm(weight, reps)` - Epley formula
@@ -137,13 +140,14 @@ docker exec workout_db psql -U workout -d workout_tracker -c "YOUR SQL HERE"
 ### Implemented
 - User auth with flask-login + flask-bcrypt
 - Strength workout logging with auto PR detection
+- **Individual working set logging** - each set has its own reps input (Set 1: 10, Set 2: 8)
 - **Smart warm-up suggestions** based on exercise order and type
 - Running sessions with interval builder
 - Recovery tracking (sleep/energy/soreness/motivation)
 - Body measurements tracking
 - Exercise library with 57 exercises (compound/isolation classified)
 - Exercise substitutes by apparatus (cable/dumbbell/barbell/machine)
-- Workout templates
+- Workout templates (with target_sets/target_reps pre-filling the form)
 - Weekly planning calendar
 - Analytics with Chart.js (heatmaps, comparisons, trends)
 - Volume spike alerts
@@ -151,6 +155,13 @@ docker exec workout_db psql -U workout -d workout_tracker -c "YOUR SQL HERE"
 - PWA (installable, offline-capable)
 - CSV data export
 - REST API with JWT
+
+### Working Sets UI
+When logging exercises, each working set has its own row:
+- Select number of working sets (1-4) from dropdown
+- Each set shows "Set 1", "Set 2", etc. with individual reps input
+- Template exercises pre-fill with `target_sets` and `target_reps`
+- Logged sets display as "2 sets: 10/8 reps @ 60kg"
 
 ### Smart Warm-up Logic
 When using a workout template, warm-up sets are auto-suggested:
