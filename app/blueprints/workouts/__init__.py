@@ -144,63 +144,94 @@ def log_exercise(session_id):
         exercise_id = request.form.get('exercise_id', type=int)
         sets = request.form.get('sets', type=int)
         reps = request.form.get('reps', type=int)
+        reps_list = request.form.get('reps_list', '')  # Comma-separated reps for each set
         weight_kg = parse_decimal(request.form.get('weight_kg'))
         rpe = request.form.get('rpe', type=int)
         rest_seconds = request.form.get('rest_seconds', type=int)
         warmup_sets = request.form.get('warmup_sets', type=int) or 0
         template_exercise_id = request.form.get('template_exercise_id', type=int)
-        set_number = request.form.get('set_number', type=int)  # For per-set logging
 
         if not all([exercise_id, sets, reps]):
             flash('Exercise, sets, and reps are required.', 'error')
         else:
+            # Parse reps_list into individual set reps
+            individual_reps = []
+            if reps_list:
+                individual_reps = [int(r.strip()) for r in reps_list.split(',') if r.strip().isdigit()]
+
             # Get previous PR before logging
             previous_pr = PersonalRecord.get_exercise_pr(
                 current_user.user_id, exercise_id, '1RM'
             )
             previous_pr_value = float(previous_pr.value) if previous_pr else None
 
-            log = StrengthLog(
-                session_id=session_id,
-                exercise_id=exercise_id,
-                sets=sets,
-                reps=reps,
-                weight_kg=weight_kg,
-                rpe=rpe,
-                rest_seconds=rest_seconds,
-                warmup_sets=warmup_sets,
-                template_exercise_id=template_exercise_id,
-                set_number=set_number
-            )
-            db.session.add(log)
+            best_estimated_1rm = 0
+            logs_created = []
+
+            # Create individual log entries for each working set
+            if individual_reps and len(individual_reps) == sets:
+                for set_num, set_reps in enumerate(individual_reps, start=1):
+                    log = StrengthLog(
+                        session_id=session_id,
+                        exercise_id=exercise_id,
+                        sets=1,
+                        reps=set_reps,
+                        weight_kg=weight_kg,
+                        rpe=rpe,
+                        rest_seconds=rest_seconds,
+                        warmup_sets=warmup_sets if set_num == 1 else 0,
+                        template_exercise_id=template_exercise_id,
+                        set_number=set_num
+                    )
+                    db.session.add(log)
+                    logs_created.append(log)
+                    if log.estimated_1rm and log.estimated_1rm > best_estimated_1rm:
+                        best_estimated_1rm = log.estimated_1rm
+            else:
+                # Fallback: single batch log (all same reps)
+                log = StrengthLog(
+                    session_id=session_id,
+                    exercise_id=exercise_id,
+                    sets=sets,
+                    reps=reps,
+                    weight_kg=weight_kg,
+                    rpe=rpe,
+                    rest_seconds=rest_seconds,
+                    warmup_sets=warmup_sets,
+                    template_exercise_id=template_exercise_id,
+                    set_number=None
+                )
+                db.session.add(log)
+                logs_created.append(log)
+                best_estimated_1rm = log.estimated_1rm or 0
+
             db.session.commit()
 
             just_logged = True  # Set was logged successfully
 
-            # Check for PR
+            # Check for PR using best 1RM from all sets
             pr_data = None
-            if weight_kg:
-                estimated_1rm = log.estimated_1rm
+            if weight_kg and best_estimated_1rm:
                 is_pr = PersonalRecord.check_and_update_pr(
                     user_id=current_user.user_id,
                     exercise_id=exercise_id,
                     record_type='1RM',
-                    new_value=estimated_1rm,
+                    new_value=best_estimated_1rm,
                     date_achieved=session.session_date
                 )
                 if is_pr:
                     exercise = Exercise.query.get(exercise_id)
                     pr_data = {
                         'exercise_name': exercise.name,
-                        'new_value': estimated_1rm,
+                        'new_value': best_estimated_1rm,
                         'previous_value': previous_pr_value,
-                        'improvement': round(estimated_1rm - previous_pr_value, 1) if previous_pr_value else None
+                        'improvement': round(best_estimated_1rm - previous_pr_value, 1) if previous_pr_value else None
                     }
                     flash(f'PR_DATA:{pr_data["exercise_name"]}:{pr_data["new_value"]}:{pr_data["previous_value"] or 0}', 'pr')
                 else:
-                    flash('Set logged successfully.', 'success')
+                    flash('Sets logged successfully.', 'success')
             else:
-                flash('Set logged successfully.', 'success')
+                flash('Sets logged successfully.', 'success')
 
     exercises = Exercise.get_strength_exercises()
     current_logs = session.strength_logs.all()
@@ -303,19 +334,30 @@ def last_performance(exercise_id):
 @workouts_bp.route('/log/<int:log_id>/delete', methods=['POST'])
 @login_required
 def delete_log(log_id):
-    """Delete a strength log entry."""
-    log = StrengthLog.query.get_or_404(log_id)
-    session = log.session
+    """Delete a strength log entry (or multiple if log_ids provided)."""
+    # Check for multiple log IDs (grouped sets deletion)
+    log_ids_str = request.form.get('log_ids', '')
+    if log_ids_str:
+        log_ids = [int(lid) for lid in log_ids_str.split(',') if lid.strip().isdigit()]
+    else:
+        log_ids = [log_id]
 
-    if session.user_id != current_user.user_id:
-        flash('Access denied.', 'error')
-        return redirect(url_for('workouts.index'))
+    session_obj = None
+    for lid in log_ids:
+        log = StrengthLog.query.get(lid)
+        if log:
+            if log.session.user_id != current_user.user_id:
+                flash('Access denied.', 'error')
+                return redirect(url_for('workouts.index'))
+            session_obj = log.session
+            db.session.delete(log)
 
-    db.session.delete(log)
     db.session.commit()
 
     flash('Log entry deleted.', 'success')
-    return redirect(url_for('workouts.log_exercise', session_id=session.session_id))
+    if session_obj:
+        return redirect(url_for('workouts.log_exercise', session_id=session_obj.session_id))
+    return redirect(url_for('workouts.index'))
 
 
 @workouts_bp.route('/session/<int:session_id>/delete', methods=['POST'])

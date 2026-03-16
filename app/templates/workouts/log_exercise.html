@@ -40,9 +40,9 @@
             <li class="template-checklist-item {% if ex.template_exercise_id in completed_template_ids %}completed{% endif %}"
                 data-exercise-id="{{ ex.exercise_id }}"
                 data-template-exercise-id="{{ ex.template_exercise_id }}"
-                data-sets="{{ ex.last_sets }}"
-                data-reps="{{ ex.last_reps }}"
-                data-weight="{{ ex.last_weight or '' }}"
+                data-target-sets="{{ ex.target_sets }}"
+                data-target-reps="{{ ex.target_reps }}"
+                data-last-weight="{{ ex.last_weight or '' }}"
                 data-warmup="{{ ex.suggested_warmup }}"
                 data-name="{{ ex.exercise_name }}">
                 <div class="checklist-checkbox">
@@ -76,38 +76,35 @@
     <section class="card logged-exercises">
         <h2>Logged Sets</h2>
         <ul class="exercise-log-list">
-            {% set ns = namespace(current_exercise=None, set_logs=[]) %}
+            {% set ns = namespace(current_exercise=None, set_logs=[], template_ex_id=None) %}
             {% for log in current_logs %}
                 {% if log.set_number %}
-                    {# Per-set log entry #}
-                    {% if ns.current_exercise != log.exercise_id %}
-                        {# New exercise - output previous group if exists #}
+                    {# Per-set log entry - group by exercise AND template_exercise_id #}
+                    {% set log_group_key = (log.exercise_id, log.template_exercise_id) %}
+                    {% set current_group_key = (ns.current_exercise, ns.template_ex_id) %}
+                    {% if log_group_key != current_group_key %}
+                        {# New exercise group - output previous group if exists #}
                         {% if ns.set_logs %}
                         <li class="logged-exercise logged-exercise-group">
                             <div class="log-info">
                                 <span class="log-exercise-name">{{ ns.set_logs[0].exercise.name }}</span>
                                 {% if ns.set_logs[0].warmup_sets %}<span class="log-warmup">{{ ns.set_logs[0].warmup_sets }} warm-up +</span>{% endif %}
-                                <div class="per-set-details">
-                                    {% for slog in ns.set_logs %}
-                                    <span class="set-detail">S{{ slog.set_number }}: {{ slog.reps }}{% if slog.rpe %}@{{ slog.rpe }}{% endif %}</span>
-                                    {% endfor %}
-                                    <span class="set-weight">@ {{ ns.set_logs[0].weight_kg }}kg</span>
-                                </div>
+                                <span class="log-details">
+                                    {{ ns.set_logs|length }} sets: {{ ns.set_logs|map(attribute='reps')|join('/') }} reps @ {{ ns.set_logs[0].weight_kg }}kg
+                                </span>
+                                {% if ns.set_logs[0].rpe %}<span class="log-rpe">RPE {{ ns.set_logs[0].rpe }}</span>{% endif %}
                                 <span class="log-1rm">Best 1RM: {{ ns.set_logs|map(attribute='estimated_1rm')|max }}kg</span>
                             </div>
-                            <div class="delete-group">
-                                {% for slog in ns.set_logs %}
-                                <form method="POST" action="{{ url_for('workouts.delete_log', log_id=slog.log_id) }}" class="delete-form">
-                                    <button type="submit" class="btn-icon btn-delete btn-delete-small" title="Delete Set {{ slog.set_number }}">&times;</button>
-                                </form>
-                                {% endfor %}
-                            </div>
+                            <form method="POST" action="{{ url_for('workouts.delete_log', log_id=ns.set_logs[0].log_id) }}" class="delete-form delete-group-form" data-log-ids="{{ ns.set_logs|map(attribute='log_id')|join(',') }}">
+                                <button type="submit" class="btn-icon btn-delete" title="Delete all sets">&times;</button>
+                            </form>
                         </li>
                         {% endif %}
                         {% set ns.current_exercise = log.exercise_id %}
+                        {% set ns.template_ex_id = log.template_exercise_id %}
                         {% set ns.set_logs = [log] %}
                     {% else %}
-                        {# Same exercise - add to group #}
+                        {# Same exercise group - add to group #}
                         {% set ns.set_logs = ns.set_logs + [log] %}
                     {% endif %}
                 {% else %}
@@ -117,24 +114,19 @@
                         <div class="log-info">
                             <span class="log-exercise-name">{{ ns.set_logs[0].exercise.name }}</span>
                             {% if ns.set_logs[0].warmup_sets %}<span class="log-warmup">{{ ns.set_logs[0].warmup_sets }} warm-up +</span>{% endif %}
-                            <div class="per-set-details">
-                                {% for slog in ns.set_logs %}
-                                <span class="set-detail">S{{ slog.set_number }}: {{ slog.reps }}{% if slog.rpe %}@{{ slog.rpe }}{% endif %}</span>
-                                {% endfor %}
-                                <span class="set-weight">@ {{ ns.set_logs[0].weight_kg }}kg</span>
-                            </div>
+                            <span class="log-details">
+                                {{ ns.set_logs|length }} sets: {{ ns.set_logs|map(attribute='reps')|join('/') }} reps @ {{ ns.set_logs[0].weight_kg }}kg
+                            </span>
+                            {% if ns.set_logs[0].rpe %}<span class="log-rpe">RPE {{ ns.set_logs[0].rpe }}</span>{% endif %}
                             <span class="log-1rm">Best 1RM: {{ ns.set_logs|map(attribute='estimated_1rm')|max }}kg</span>
                         </div>
-                        <div class="delete-group">
-                            {% for slog in ns.set_logs %}
-                            <form method="POST" action="{{ url_for('workouts.delete_log', log_id=slog.log_id) }}" class="delete-form">
-                                <button type="submit" class="btn-icon btn-delete btn-delete-small" title="Delete Set {{ slog.set_number }}">&times;</button>
-                            </form>
-                            {% endfor %}
-                        </div>
+                        <form method="POST" action="{{ url_for('workouts.delete_log', log_id=ns.set_logs[0].log_id) }}" class="delete-form delete-group-form" data-log-ids="{{ ns.set_logs|map(attribute='log_id')|join(',') }}">
+                            <button type="submit" class="btn-icon btn-delete" title="Delete all sets">&times;</button>
+                        </form>
                     </li>
                     {% set ns.set_logs = [] %}
                     {% set ns.current_exercise = None %}
+                    {% set ns.template_ex_id = None %}
                     {% endif %}
                     {# Output the batch entry #}
                     <li class="logged-exercise">
@@ -158,21 +150,15 @@
                 <div class="log-info">
                     <span class="log-exercise-name">{{ ns.set_logs[0].exercise.name }}</span>
                     {% if ns.set_logs[0].warmup_sets %}<span class="log-warmup">{{ ns.set_logs[0].warmup_sets }} warm-up +</span>{% endif %}
-                    <div class="per-set-details">
-                        {% for slog in ns.set_logs %}
-                        <span class="set-detail">S{{ slog.set_number }}: {{ slog.reps }}{% if slog.rpe %}@{{ slog.rpe }}{% endif %}</span>
-                        {% endfor %}
-                        <span class="set-weight">@ {{ ns.set_logs[0].weight_kg }}kg</span>
-                    </div>
+                    <span class="log-details">
+                        {{ ns.set_logs|length }} sets: {{ ns.set_logs|map(attribute='reps')|join('/') }} reps @ {{ ns.set_logs[0].weight_kg }}kg
+                    </span>
+                    {% if ns.set_logs[0].rpe %}<span class="log-rpe">RPE {{ ns.set_logs[0].rpe }}</span>{% endif %}
                     <span class="log-1rm">Best 1RM: {{ ns.set_logs|map(attribute='estimated_1rm')|max }}kg</span>
                 </div>
-                <div class="delete-group">
-                    {% for slog in ns.set_logs %}
-                    <form method="POST" action="{{ url_for('workouts.delete_log', log_id=slog.log_id) }}" class="delete-form">
-                        <button type="submit" class="btn-icon btn-delete btn-delete-small" title="Delete Set {{ slog.set_number }}">&times;</button>
-                    </form>
-                    {% endfor %}
-                </div>
+                <form method="POST" action="{{ url_for('workouts.delete_log', log_id=ns.set_logs[0].log_id) }}" class="delete-form delete-group-form" data-log-ids="{{ ns.set_logs|map(attribute='log_id')|join(',') }}">
+                    <button type="submit" class="btn-icon btn-delete" title="Delete all sets">&times;</button>
+                </form>
             </li>
             {% endif %}
         </ul>
@@ -218,58 +204,52 @@
                 <p>Last time: <span id="lastDetails"></span></p>
             </div>
 
-            <!-- Per-set logging toggle -->
-            <div class="form-group per-set-toggle">
-                <label class="toggle-label">
-                    <input type="checkbox" id="perSetMode" name="per_set_mode">
-                    <span class="toggle-text">Log sets individually</span>
-                    <span class="toggle-hint">(for variable reps: 10, 8, 7...)</span>
-                </label>
-            </div>
-
-            <!-- Hidden field for set number in per-set mode -->
-            <input type="hidden" id="set_number" name="set_number" value="">
-
-            <!-- Batch mode inputs (default) -->
-            <div id="batchModeInputs">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="warmup_sets">Warm-up Sets</label>
-                        <input type="number" id="warmup_sets" name="warmup_sets" min="0" max="10"
-                               value="0" inputmode="numeric" class="input-large">
-                    </div>
-                    <div class="form-group">
-                        <label for="sets">Working Sets</label>
-                        <input type="number" id="sets" name="sets" min="1" max="20"
-                               required inputmode="numeric" class="input-large">
-                    </div>
-                    <div class="form-group">
-                        <label for="reps">Reps</label>
-                        <input type="number" id="reps" name="reps" min="1" max="100"
-                               required inputmode="numeric" class="input-large">
-                    </div>
+            <!-- Working sets configuration -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="warmup_sets">Warm-up Sets</label>
+                    <input type="number" id="warmup_sets" name="warmup_sets" min="0" max="10"
+                           value="0" inputmode="numeric" class="input-large">
+                </div>
+                <div class="form-group">
+                    <label for="num_working_sets">Working Sets</label>
+                    <select id="num_working_sets" class="input-large">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Per-set mode inputs (hidden by default) -->
-            <div id="perSetModeInputs" style="display: none;">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="warmup_sets_perset">Warm-up Sets</label>
-                        <input type="number" id="warmup_sets_perset" min="0" max="10"
-                               value="0" inputmode="numeric" class="input-large">
-                    </div>
-                    <div class="form-group">
-                        <label id="currentSetLabel">Set 1</label>
-                        <div class="current-set-display" id="currentSetDisplay">1</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reps_perset">Reps</label>
-                        <input type="number" id="reps_perset" min="1" max="100"
-                               required inputmode="numeric" class="input-large">
-                    </div>
+            <!-- Individual working set rows -->
+            <div id="workingSetsContainer" class="working-sets-container">
+                <div class="working-set-row" data-set="1">
+                    <label class="set-label">Set 1</label>
+                    <input type="number" name="reps_1" class="input-reps" min="1" max="100"
+                           inputmode="numeric" placeholder="Reps" required>
+                </div>
+                <div class="working-set-row" data-set="2">
+                    <label class="set-label">Set 2</label>
+                    <input type="number" name="reps_2" class="input-reps" min="1" max="100"
+                           inputmode="numeric" placeholder="Reps" required>
+                </div>
+                <div class="working-set-row" data-set="3" style="display: none;">
+                    <label class="set-label">Set 3</label>
+                    <input type="number" name="reps_3" class="input-reps" min="1" max="100"
+                           inputmode="numeric" placeholder="Reps">
+                </div>
+                <div class="working-set-row" data-set="4" style="display: none;">
+                    <label class="set-label">Set 4</label>
+                    <input type="number" name="reps_4" class="input-reps" min="1" max="100"
+                           inputmode="numeric" placeholder="Reps">
                 </div>
             </div>
+
+            <!-- Hidden fields for form submission -->
+            <input type="hidden" id="sets" name="sets" value="2">
+            <input type="hidden" id="reps" name="reps" value="">
+            <input type="hidden" id="reps_list" name="reps_list" value="">
 
             <div class="form-row">
                 <div class="form-group">
@@ -377,109 +357,52 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Per-set mode handling
-    const perSetToggle = document.getElementById('perSetMode');
-    const batchModeInputs = document.getElementById('batchModeInputs');
-    const perSetModeInputs = document.getElementById('perSetModeInputs');
-    const setNumberField = document.getElementById('set_number');
-    const currentSetDisplay = document.getElementById('currentSetDisplay');
-    const currentSetLabel = document.getElementById('currentSetLabel');
+    // Working sets handling
+    const numWorkingSetsSelect = document.getElementById('num_working_sets');
+    const workingSetsContainer = document.getElementById('workingSetsContainer');
     const exerciseForm = document.getElementById('exerciseForm');
+    const setsHiddenField = document.getElementById('sets');
+    const repsHiddenField = document.getElementById('reps');
+    const repsListField = document.getElementById('reps_list');
 
-    let currentSetNumber = 1;
-    let perSetExerciseId = null;  // Track which exercise we're logging sets for
+    // Update visible working set rows based on selection
+    function updateWorkingSetRows() {
+        const numSets = parseInt(numWorkingSetsSelect.value);
+        setsHiddenField.value = numSets;
 
-    // Calculate next set number based on existing logs for this exercise
-    function calculateNextSetNumber(exerciseId) {
-        // Count existing per-set logs for this exercise in current session
-        const loggedSets = document.querySelectorAll('.logged-exercise-group');
-        let maxSet = 0;
-        // We'll get this from the server-side data instead
-        {% if current_logs %}
-        const perSetLogs = [
-            {% for log in current_logs %}
-            {% if log.set_number %}
-            { exerciseId: {{ log.exercise_id }}, setNumber: {{ log.set_number }} },
-            {% endif %}
-            {% endfor %}
-        ];
-        perSetLogs.forEach(log => {
-            if (log.exerciseId == exerciseId && log.setNumber > maxSet) {
-                maxSet = log.setNumber;
+        workingSetsContainer.querySelectorAll('.working-set-row').forEach(row => {
+            const setNum = parseInt(row.dataset.set);
+            const input = row.querySelector('input');
+            if (setNum <= numSets) {
+                row.style.display = 'flex';
+                input.required = true;
+            } else {
+                row.style.display = 'none';
+                input.required = false;
+                input.value = '';
             }
         });
-        {% endif %}
-        return maxSet + 1;
     }
 
-    perSetToggle.addEventListener('change', function() {
-        if (this.checked) {
-            // Switch to per-set mode
-            batchModeInputs.style.display = 'none';
-            perSetModeInputs.style.display = 'block';
+    numWorkingSetsSelect.addEventListener('change', updateWorkingSetRows);
 
-            // Copy warmup value
-            document.getElementById('warmup_sets_perset').value = document.getElementById('warmup_sets').value;
-
-            // Copy reps value
-            document.getElementById('reps_perset').value = document.getElementById('reps').value;
-
-            // Set current exercise and calculate set number
-            perSetExerciseId = exerciseSelect.value;
-            if (perSetExerciseId) {
-                currentSetNumber = calculateNextSetNumber(perSetExerciseId);
-            } else {
-                currentSetNumber = 1;
-            }
-            updateSetDisplay();
-        } else {
-            // Switch to batch mode
-            batchModeInputs.style.display = 'block';
-            perSetModeInputs.style.display = 'none';
-            setNumberField.value = '';
-        }
-    });
-
-    function updateSetDisplay() {
-        currentSetDisplay.textContent = currentSetNumber;
-        currentSetLabel.textContent = 'Set ' + currentSetNumber;
-        setNumberField.value = currentSetNumber;
-    }
-
-    // When exercise changes in per-set mode, reset set counter
-    exerciseSelect.addEventListener('change', function() {
-        if (perSetToggle.checked) {
-            perSetExerciseId = this.value;
-            if (perSetExerciseId) {
-                currentSetNumber = calculateNextSetNumber(perSetExerciseId);
-            } else {
-                currentSetNumber = 1;
-            }
-            updateSetDisplay();
-        }
-    });
-
-    // Before form submit in per-set mode, adjust values
+    // Before form submit, compile reps into hidden fields
     exerciseForm.addEventListener('submit', function(e) {
-        if (perSetToggle.checked) {
-            // In per-set mode:
-            // - sets = 1 (always one set)
-            // - reps = value from reps_perset
-            // - warmup_sets = warmup_sets_perset (only for first set)
-            // - set_number = current set number
+        const numSets = parseInt(numWorkingSetsSelect.value);
+        const repsList = [];
 
-            document.getElementById('sets').value = 1;
-            document.getElementById('reps').value = document.getElementById('reps_perset').value;
-
-            // Only include warmup for first set
-            if (currentSetNumber === 1) {
-                document.getElementById('warmup_sets').value = document.getElementById('warmup_sets_perset').value;
-            } else {
-                document.getElementById('warmup_sets').value = 0;
+        for (let i = 1; i <= numSets; i++) {
+            const repsInput = document.querySelector(`input[name="reps_${i}"]`);
+            if (repsInput && repsInput.value) {
+                repsList.push(repsInput.value);
             }
-
-            setNumberField.value = currentSetNumber;
         }
+
+        // Set the reps_list for variable reps (comma-separated)
+        repsListField.value = repsList.join(',');
+
+        // For backwards compatibility, set reps to first value
+        repsHiddenField.value = repsList[0] || '';
     });
 
     // Template checklist click handlers
@@ -490,9 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
             item.addEventListener('click', function() {
                 const exerciseId = this.dataset.exerciseId;
                 const templateExerciseId = this.dataset.templateExerciseId;
-                const sets = this.dataset.sets;
-                const reps = this.dataset.reps;
-                const weight = this.dataset.weight;
+                const targetSets = this.dataset.targetSets;
+                const targetReps = this.dataset.targetReps;
+                const lastWeight = this.dataset.lastWeight;
                 const warmup = this.dataset.warmup;
                 const name = this.dataset.name;
 
@@ -504,16 +427,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     templateExerciseIdField.value = templateExerciseId;
                 }
 
-                // Pre-fill form with last performance and suggested warm-up
+                // Pre-fill form with template target sets/reps and suggested warm-up
                 document.getElementById('warmup_sets').value = warmup || 0;
-                document.getElementById('sets').value = sets;
-                document.getElementById('reps').value = reps;
-                document.getElementById('weight_kg').value = weight;
+                document.getElementById('num_working_sets').value = targetSets;
+                updateWorkingSetRows();
 
-                // Show last performance
-                if (weight) {
-                    lastDetails.textContent = `${sets}x${reps} @ ${weight}kg`;
+                // Pre-fill all visible reps inputs with target reps
+                for (let i = 1; i <= parseInt(targetSets); i++) {
+                    const repsInput = document.querySelector(`input[name="reps_${i}"]`);
+                    if (repsInput) repsInput.value = targetReps;
+                }
+
+                document.getElementById('weight_kg').value = lastWeight;
+
+                // Show last performance (weight from last time)
+                if (lastWeight) {
+                    lastDetails.textContent = `Last weight: ${lastWeight}kg`;
                     lastPerformance.style.display = 'block';
+                } else {
+                    lastPerformance.style.display = 'none';
                 }
 
                 // Show substitute section
@@ -580,8 +512,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     lastPerformance.style.display = 'block';
 
                     // Pre-fill form
-                    document.getElementById('sets').value = data.sets;
-                    document.getElementById('reps').value = data.reps;
+                    document.getElementById('num_working_sets').value = data.sets;
+                    updateWorkingSetRows();
+
+                    // Pre-fill all visible reps inputs
+                    for (let i = 1; i <= parseInt(data.sets); i++) {
+                        const repsInput = document.querySelector(`input[name="reps_${i}"]`);
+                        if (repsInput) repsInput.value = data.reps;
+                    }
+
                     document.getElementById('weight_kg').value = data.weight_kg || '';
                 } else {
                     lastPerformance.style.display = 'none';
@@ -631,6 +570,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 substituteList.style.display = 'block';
             });
+    });
+
+    // Handle grouped delete forms - add log_ids as hidden field
+    document.querySelectorAll('.delete-group-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const logIds = this.dataset.logIds;
+            if (logIds) {
+                // Add hidden field with all log IDs
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'log_ids';
+                hiddenInput.value = logIds;
+                this.appendChild(hiddenInput);
+            }
+        });
     });
 });
 </script>
